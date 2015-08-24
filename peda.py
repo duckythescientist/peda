@@ -4683,6 +4683,29 @@ class PEDACmd(object):
         else:
             sp = None
 
+        step = peda.intsize()
+
+        saved_bps = []
+        if self._is_running():
+            # for some reason with GDB, the reg "sp" will match the address size of the arch
+            # "bp" won't so we find it out manually
+            bp = peda.getreg("rbp")
+            if bp is None:
+                bp = peda.getreg("ebp")
+                if bp is None:
+                    bp = peda.getreg("bp")
+            
+            while bp != 0:
+                saved_bps += [bp]
+                spam = peda.execute_redirect("x/%sx 0x%x" % ("g" if step == 8 else "w", bp))
+                bp = int(spam.split(":")[1].strip(), 0)
+
+        def fuzzy_index(a):
+            for i in range(len(saved_bps)):
+                if a < saved_bps[i]:
+                    return i
+            return len(saved_bps)
+
         if count is None:
             count = 8
             if address is None:
@@ -4694,7 +4717,6 @@ class PEDACmd(object):
         if not address:
             return
 
-        step = peda.intsize()
         if not peda.is_address(address): # cannot determine address
             for i in range(count):
                 if not peda.execute("x/%sx 0x%x" % ("g" if step == 8 else "w", address + i*step)):
@@ -4711,7 +4733,10 @@ class PEDACmd(object):
         idx = 0
         text = ""
         for chain in result:
-            text += "%04d| " % (idx)
+            frameidx = fuzzy_index(idx + address)
+            text += "  "*frameidx
+            # text += "%02d: " % (frameidx)
+            text += colorize("%04d| " % (idx), (37,31,33,32,36,34,35,)[frameidx])
             text += format_reference_chain(chain)
             text += "\n"
             idx += step
