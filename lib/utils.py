@@ -129,6 +129,11 @@ def colorize(text, color=None, attrib=None):
                 ccode += ";" + CATTRS[attr]
     if color in COLORS:
         ccode += ";" + COLORS[color]
+    elif color is not None:
+        try:
+            ccode += ";" + str(int(color))
+        except ValueError, e:
+            pass
     return CPRE + ccode + "m" + text + CSUF
 
 def green(text, attrib=None):
