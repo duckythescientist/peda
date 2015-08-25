@@ -4332,7 +4332,7 @@ class PEDACmd(object):
         (opt, count) = normalize_argv(arg, 2)
 
         if to_int(count) is None:
-            count = 8
+            count = 16
         if opt is None:
             opt = config.Option.get("context")
         if opt == "all":
